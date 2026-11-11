@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package rpc;
+
+option go_package = "example.com/private-search/rpc;rpc";
+
+message MetadataRequest {}
+
+message MetadataReply {
+  uint64 N = 1;
+  uint64 Dim = 2;
+  uint64 M = 3;
+  uint64 DbEntryByteNum = 4;
+  uint64 PartitionNum = 5;
+  uint64 PartitionSize = 6;
+  uint64 ChunkSize = 7;
+  uint64 SetSize = 8;
+  uint64 FailureProbLog2 = 9;
+  bool PqEnabled = 10;
+  uint64 PqM = 11;
+  uint64 PqKsub = 12;
+  uint64 PqDsub = 13;
+  bytes PqCodebook = 14;
+  uint64 PqNeighborCodeCount = 15;
+  // PreprocessProtocolVersion is the StartPreprocess protocol the server
+  // speaks. 0 means the server predates PreprocessProtocolVersion and builds
+  // hints from a client PRF key (no longer supported).
+  uint32 PreprocessProtocolVersion = 16;
+}
+
+// PreprocessRequest asks the server to stream one partition of the DB. It
+// carries only public values: the client keeps its PRF key, hint tags and
+// replacement positions to itself and builds the hints locally.
+message PreprocessRequest {
+  reserved 2, 3, 4;
+  reserved "PrfKey", "PrimaryTags", "BackupTags";
+  string RequestId = 1;
+  int32 PartitionId = 5;
+  uint32 ProtocolVersion = 6;
+}
+
+// PreprocessChunk is one block of the partition DB stream. Block b holds the
+// entries [b*B, min((b+1)*B, PartitionSize)) of the partition, zero padded
+// past the stored entries, where B depends only on ChunkSize and
+// DbEntryByteNum (pianopir.StreamBlockEntries).
+message PreprocessChunk {
+  reserved 2, 3, 4, 5;
+  reserved "PrimaryParity", "BackupParity", "ReplacementIdx", "ReplacementVal";
+  uint64 PartitionId = 1;
+  uint32 ProtocolVersion = 6;
+  uint64 BlockIndex = 7;
+  uint64 FirstEntry = 8;
+  bytes Entries = 9;
+}
+
+message PrivateQueryRequest {
+  uint64 PartitionId = 1;
+  repeated uint32 Offsets = 2;
+}
+
+message PrivateQueryReply {
+  bytes Entry = 1;
+}
+
+// BatchPrivateQueryRequest carries Count PrivateQuery offset sets of one
+// partition in one round trip: set i is Offsets[i*SetSize:(i+1)*SetSize].
+// The server answers each set exactly as PrivateQuery would.
+message BatchPrivateQueryRequest {
+  uint64 PartitionId = 1;
+  uint32 Count = 2;
+  repeated uint32 Offsets = 3;
+}
+
+// BatchPrivateQueryReply holds the Count PrivateQuery answers in request order.
+message BatchPrivateQueryReply {
+  repeated bytes Entries = 1;
+}
+
+message PlainQueryRequest {
+  repeated uint64 Ids = 1;
+}
+
+message PlainQueryReply {
+  repeated bytes Entries = 1;
+}
+
+message GetStartVerticesRequest {
+  uint64 Num = 1;
+}
+
+message StartVertexEntry {
+  uint64 Id = 1;
+  bytes Entry = 2;
+}
+
+message GetStartVerticesReply {
+  repeated StartVertexEntry Vertices = 1;
+}
+
+message HealthRequest {}
+
+message HealthReply {}
+
+service PirService {
+  rpc GetMetadata(MetadataRequest) returns (MetadataReply);
+  rpc StartPreprocess(PreprocessRequest) returns (stream PreprocessChunk);
+  rpc PrivateQuery(PrivateQueryRequest) returns (PrivateQueryReply);
+  rpc BatchPrivateQuery(BatchPrivateQueryRequest) returns (BatchPrivateQueryReply);
+  rpc PlainQuery(PlainQueryRequest) returns (PlainQueryReply);
+  rpc GetStartVertices(GetStartVerticesRequest) returns (GetStartVerticesReply);
+  rpc Health(HealthRequest) returns (HealthReply);
+}

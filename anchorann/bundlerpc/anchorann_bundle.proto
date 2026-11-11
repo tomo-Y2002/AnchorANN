@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+// Distribution of the AnchorANN anchor NSG bundle (anchorann/bundle) from the
+// server to clients. This service is separate from rpc/pir.proto so the PIR
+// service stays unchanged. See anchorann/docs/nsg-bundle.md.
+package anchorannbundle;
+
+option go_package = "privatesearch/anchorann/bundlerpc;bundlerpc";
+
+message InfoRequest {}
+
+// Info describes the served bundle without its body. sha256 is the hex digest
+// of the whole encoded bundle, including its trailing checksum.
+message Info {
+  uint32 format_version = 1;
+  uint64 total_bytes = 2;
+  string sha256 = 3;
+  uint32 chunk_bytes = 4;
+  uint64 cluster_count = 5;
+  uint64 dimension = 6;
+  uint64 cluster_size = 7;
+}
+
+// FetchRequest names the bundle digest the client obtained from GetInfo. The
+// server refuses with FAILED_PRECONDITION if it serves a different bundle.
+message FetchRequest {
+  string sha256 = 1;
+}
+
+// Chunk carries bundle bytes [offset, offset+len(data)).
+message Chunk {
+  uint64 offset = 1;
+  bytes data = 2;
+}
+
+service AnchorBundle {
+  rpc GetInfo(InfoRequest) returns (Info);
+  rpc Fetch(FetchRequest) returns (stream Chunk);
+}

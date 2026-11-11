@@ -1,0 +1,6 @@
+/data/
+/results/
+/bin/
+/paper/figures/
+__pycache__/
+*.pyc

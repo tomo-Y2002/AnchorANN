@@ -1,0 +1,3 @@
+condition,network_s,server_s,client_s,hint_s,total_s
+pacmann_baseline,1.4046,0.5409,0.3228,0.5664,2.8348
+pacmann_pq_m128_measured,0.9408,0.2220,0.1579,0.3604,1.6811

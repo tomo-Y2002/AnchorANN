@@ -1,0 +1,4 @@
+method,setting,one_recall,rounds,pir_requests,rounds_is_derived
+Pacmann,step=28;B=16,0.982,28,2688,False
+Amora,T=6;threads=1,0.983,13,25,False
+AnchorANN,n_probe=128;L_search=128;P1;batch,0.981,1,128,False

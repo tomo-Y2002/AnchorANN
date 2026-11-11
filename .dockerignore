@@ -1,0 +1,6 @@
+.git
+data
+results
+bin
+**/__pycache__
+paper/figures
